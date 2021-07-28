@@ -7,6 +7,7 @@ const Rubik = () => {
   const Camera = useRef(new THREE.PerspectiveCamera()).current;
   const Renderer = useRef(new THREE.WebGLRenderer()).current;
   const Meshs = useRef<any[]>([]).current
+  const Lights = useRef<any[]>([]).current
   const amimationFrame = useRef<any>()
   const linePositions = useRef<any>([]).current
   const lineColors = useRef<any>([]).current
@@ -49,6 +50,25 @@ const Rubik = () => {
     Meshs.push(line)
   }, [])
 
+  const createLambert = useCallback(() => {
+    const lambert = new THREE.MeshLambertMaterial({ color: 'red '})
+    const rect = new THREE.BoxBufferGeometry(2 ,2 ,2)
+    const mesh = new THREE.Mesh(rect, lambert)
+    mesh.position.set( -4, 0, 0 )
+    Scene.add(mesh)
+    Meshs.push(mesh)
+  }, [])
+
+  const createLight = useCallback(() => {
+    // 平行光 -- 太阳光
+    const dirLight = new THREE.DirectionalLight('#ffffff', 0.7)
+    dirLight.position.set(100, 100, 100)
+
+    // 环境光 -- 打量物体表面
+    const ambLight = new THREE.AmbientLight('#ffffff', 0.5)
+    Scene.add(dirLight, ambLight)
+    Lights.push(dirLight, ambLight)
+  }, [])
 
   const initThree = useCallback(() => {
     Renderer.setSize(window.innerWidth, window.innerHeight);
@@ -75,6 +95,8 @@ const Rubik = () => {
   useEffect(() => {
     threeRef.current.append(Renderer.domElement);
     initThree();
+    createLight()
+    createLambert();
     createLine();
     createRect();
     renderScene();
@@ -86,6 +108,7 @@ const Rubik = () => {
         item.geometry.dispose()
         item.material.dispose()
       })
+      Lights.for
       Renderer.dispose();
       // Scene.dispose();
     }
