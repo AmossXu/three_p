@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 
 const Rubik = () => {
@@ -50,8 +50,11 @@ const Rubik = () => {
     Meshs.push(line)
   }, [])
 
+  /**
+   * 创建Lambert网格材质
+   */
   const createLambert = useCallback(() => {
-    const lambert = new THREE.MeshLambertMaterial({ color: 'red '})
+    const lambert = new THREE.MeshLambertMaterial({ color: 'red'})
     const rect = new THREE.BoxBufferGeometry(2 ,2 ,2)
     const mesh = new THREE.Mesh(rect, lambert)
     mesh.position.set( -4, 0, 0 )
@@ -59,15 +62,32 @@ const Rubik = () => {
     Meshs.push(mesh)
   }, [])
 
+  const createPhong = useCallback(() => {
+    const phong = new THREE.MeshPhongMaterial({ color: 'red'})
+    const rect = new THREE.BoxBufferGeometry(2, 2, 2)
+    const mesh = new THREE.Mesh(rect, phong)
+    mesh.position.set(-8, 0, 0)
+    Scene.add(mesh)
+    Meshs.push(mesh)
+  }, [])
+
   const createLight = useCallback(() => {
     // 平行光 -- 太阳光
-    const dirLight = new THREE.DirectionalLight('#ffffff', 0.7)
-    dirLight.position.set(100, 100, 100)
+    // const dirLight = new THREE.DirectionalLight('#ffffff', 0.7)
+    // dirLight.position.set(100, 100, 100)
 
-    // 环境光 -- 打量物体表面
-    const ambLight = new THREE.AmbientLight('#ffffff', 0.5)
-    Scene.add(dirLight, ambLight)
-    Lights.push(dirLight, ambLight)
+    // // 环境光 -- 打量物体表面
+    // const ambLight = new THREE.AmbientLight('#ffffff', 0.5)
+
+    // Scene.add(dirLight, ambLight)
+    // Lights.push(dirLight, ambLight)
+
+    // 点光源
+    const pointLight = new THREE.PointLight('#ffffff', 1, 15)
+    pointLight.position.set(0, 3, 0)
+    Scene.add(pointLight)
+    Lights.push(pointLight)
+
   }, [])
 
   const initThree = useCallback(() => {
@@ -99,6 +119,7 @@ const Rubik = () => {
     createLambert();
     createLine();
     createRect();
+    createPhong();
     renderScene();
 
     return () => {
@@ -108,7 +129,9 @@ const Rubik = () => {
         item.geometry.dispose()
         item.material.dispose()
       })
-      Lights.for
+      Lights.forEach(item => {
+        Scene.remove(item)
+      })
       Renderer.dispose();
       // Scene.dispose();
     }
