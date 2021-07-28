@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { Mesh } from "three";
 
 const Rubik = () => {
   const threeRef = useRef<any>()
@@ -12,6 +11,9 @@ const Rubik = () => {
   const linePositions = useRef<any>([]).current
   const lineColors = useRef<any>([]).current
 
+  /**
+   * 创建正方体
+   */
   const createRect = useCallback(() => {
     const rect = new THREE.BoxBufferGeometry(2 ,2 ,2)
     const meshBasic = new THREE.MeshBasicMaterial({color: 'red'})
@@ -25,17 +27,18 @@ const Rubik = () => {
    * 创建线条
    */
   const createLine = useCallback(() => {
-    const lineMaterial = new THREE.LineBasicMaterial()
+    const lineMaterial = new THREE.LineBasicMaterial({
+      vertexColors: true
+    })
     const geometry = new THREE.BufferGeometry()
     for(let i = 0; i< 100; i++) {
       const x = Math.random() * 2 -1
       const y = Math.random() * 2 -1
       const z = Math.random() * 2 -1
       linePositions.push(x, y, z)
-      lineColors.push(200)
-      lineColors.push(y / 2)
-      lineColors.push(z / 2)
-
+      lineColors.push(Math.random())
+      lineColors.push(Math.random())
+      lineColors.push(Math.random())
     }
     geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( linePositions, 3 ) );
     geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( lineColors, 3 ) );
@@ -46,11 +49,6 @@ const Rubik = () => {
     Meshs.push(line)
   }, [])
 
-  const createLight = useCallback(() => {
-    const light = new THREE.AmbientLight(0x404040)
-
-    Scene.add(light)
-  }, [])
 
   const initThree = useCallback(() => {
     Renderer.setSize(window.innerWidth, window.innerHeight);
