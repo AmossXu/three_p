@@ -6,11 +6,60 @@ const Rubik = () => {
   const Scene = useRef(new THREE.Scene()).current;
   const Camera = useRef(new THREE.PerspectiveCamera()).current;
   const Renderer = useRef(new THREE.WebGLRenderer()).current;
+  const Floor = useRef<any>()
   const Meshs = useRef<any[]>([]).current
   const Lights = useRef<any[]>([]).current
   const amimationFrame = useRef<any>()
   const linePositions = useRef<any>([]).current
   const lineColors = useRef<any>([]).current
+  const isDown = useRef<boolean>(false)
+  const PI = useRef(15)
+  const R = useRef(90)
+
+  // *********************************************************
+  // movement
+  const mouseDown = useCallback(() => {
+    isDown.current = true
+  }, [])
+
+  const mouseUp = useCallback(() => {
+    isDown.current = true
+  }, [])
+
+  const move = useCallback((event) => {
+    if(!isDown.current) return;
+    R.current -= event.movementX * 0.2
+    const x = PI.current * Math.cos(R.current / 100 * Math.PI)
+    const y = Camera.position.y + event.movementY * 0.1
+    const z = PI.current * Math.sin(R.current / 100 * Math.PI)
+    Camera.position.set(x, y, z)
+    Camera.lookAt(0, 0, 0)
+  }, [])
+
+  const wheel = useCallback((event) => {
+    if(event.deltaY>0) PI.current += 1
+    else PI.current -= 1
+    const x = PI.current * Math.cos(R.current / 100 * Math.PI)
+    const y = Camera.position.y
+    const z = PI.current * Math.sin(R.current / 100 * Math.PI)
+    Camera.position.set(x, y, z)
+    Camera.lookAt(0, 0, 0)
+  }, [])
+  // *********************************************************
+
+  /**
+   * 创建地板
+   */
+  const createFloor = useCallback(() => {
+    const lambert = new THREE.MeshLambertMaterial({color: '#fff'})
+    const plane = new THREE.PlaneGeometry(60, 60)
+    const mesh = new THREE.Mesh(plane, lambert)
+    mesh.rotation.x = -90 / 180 * Math.PI
+    mesh.position.set(0, -4, 0)
+    mesh.receiveShadow = true
+    Scene.add(mesh)
+    Floor.current = mesh
+  }, [])
 
   /**
    * 创建正方体
@@ -46,6 +95,7 @@ const Rubik = () => {
     geometry.computeBoundingSphere()
     const line = new THREE.Line(geometry, lineMaterial)
     line.position.set(4,0,0)
+    line.castShadow = true
     Scene.add(line)
     Meshs.push(line)
   }, [])
@@ -58,6 +108,8 @@ const Rubik = () => {
     const rect = new THREE.BoxBufferGeometry(2 ,2 ,2)
     const mesh = new THREE.Mesh(rect, lambert)
     mesh.position.set( -4, 0, 0 )
+    mesh.castShadow = true
+    mesh.receiveShadow = true
     Scene.add(mesh)
     Meshs.push(mesh)
   }, [])
@@ -73,8 +125,15 @@ const Rubik = () => {
 
   const createLight = useCallback(() => {
     // 平行光 -- 太阳光
-    // const dirLight = new THREE.DirectionalLight('#ffffff', 0.7)
-    // dirLight.position.set(100, 100, 100)
+    const dirLight = new THREE.DirectionalLight('#ffffff', 0.7)
+    dirLight.position.set(0, 200, 100)
+    dirLight.castShadow =true
+    dirLight.shadow.camera.top = -10
+    dirLight.shadow.camera.bottom = 10
+    dirLight.shadow.camera.left = 10
+    dirLight.shadow.camera.right = -10
+    dirLight.shadow.mapSize.width = 512
+    dirLight.shadow.mapSize.height = 512
 
     // // 环境光 -- 打量物体表面
     // const ambLight = new THREE.AmbientLight('#ffffff', 0.5)
@@ -83,21 +142,22 @@ const Rubik = () => {
     // Lights.push(dirLight, ambLight)
 
     // 点光源
-    const pointLight = new THREE.PointLight('#ffffff', 1, 15)
-    pointLight.position.set(0, 3, 0)
-    Scene.add(pointLight)
-    Lights.push(pointLight)
+    // const pointLight = new THREE.PointLight('#ffffff', 1, 15)
+    // pointLight.position.set(0, 3, 0)
+    Scene.add(dirLight)
+    Lights.push(dirLight)
 
   }, [])
 
   const initThree = useCallback(() => {
     Renderer.setSize(window.innerWidth, window.innerHeight);
+    Renderer.shadowMap.enabled = true
 
     // 相机参数
     Camera.aspect = window.innerWidth / window.innerHeight
     Camera.fov = 45
     Camera.near = 1
-    Camera.position.set(0 , 10, 20)
+    Camera.position.set(0 , 10, PI.current)
     Camera.lookAt(0, 0, 0)
     Camera.updateProjectionMatrix()
   }, [Renderer, threeRef])
@@ -116,6 +176,7 @@ const Rubik = () => {
     threeRef.current.append(Renderer.domElement);
     initThree();
     createLight()
+    createFloor()
     createLambert();
     createLine();
     createRect();
@@ -133,11 +194,13 @@ const Rubik = () => {
         Scene.remove(item)
       })
       Renderer.dispose();
+
+      Floor.current && Scene.remove(Floor.current)
       // Scene.dispose();
     }
   }, [])
 
-  return <div ref={threeRef} id="canvas-frame" />;
+  return <div ref={threeRef} onWheel={wheel} onMouseDown={mouseDown} onMouseUp={mouseUp} onMouseMove={move} id="canvas-frame" />;
 };
 
 export default Rubik;
