@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
-
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 const Rubik = () => {
   const threeRef = useRef<any>()
   const Scene = useRef(new THREE.Scene()).current;
   const Camera = useRef(new THREE.PerspectiveCamera()).current;
-  const Renderer = useRef(new THREE.WebGLRenderer()).current;
+  const Renderer = useRef(new THREE.WebGLRenderer({ antialias: true })).current;
+  const Controls = useRef(new OrbitControls(Camera, Renderer.domElement))
   const Floor = useRef<any>()
   const Meshs = useRef<any[]>([]).current
   const Lights = useRef<any[]>([]).current
@@ -172,6 +173,18 @@ const Rubik = () => {
     amimationFrame.current = window.requestAnimationFrame(() => renderScene())
   }, [Renderer, Meshs])
 
+  const resizeScene = useCallback(() => {
+    Renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // 相机参数
+    Camera.aspect = window.innerWidth / window.innerHeight
+    Camera.fov = 45
+    Camera.near = 1
+    Camera.position.set(0 , 10, PI.current)
+    Camera.lookAt(0, 0, 0)
+    Camera.updateProjectionMatrix()
+  }, [])
+
   useEffect(() => {
     threeRef.current.append(Renderer.domElement);
     initThree();
@@ -182,6 +195,8 @@ const Rubik = () => {
     createRect();
     createPhong();
     renderScene();
+
+    window.addEventListener('resize', resizeScene, false )
 
     return () => {
       cancelAnimationFrame(amimationFrame.current)
@@ -195,12 +210,14 @@ const Rubik = () => {
       })
       Renderer.dispose();
 
+      window.removeEventListener('resize', resizeScene, false)
+
       Floor.current && Scene.remove(Floor.current)
       // Scene.dispose();
     }
   }, [])
-
-  return <div ref={threeRef} onWheel={wheel} onMouseDown={mouseDown} onMouseUp={mouseUp} onMouseMove={move} id="canvas-frame" />;
+  // return <div ref={threeRef} onWheel={wheel} onMouseDown={mouseDown} onMouseUp={mouseUp} onMouseMove={move} id="canvas-frame" />;
+  return <div ref={threeRef} id="canvas-frame" />;
 };
 
 export default Rubik;
