@@ -17,6 +17,7 @@ const Rubik = () => {
   const isDown = useRef<boolean>(false)
   const PI = useRef(15)
   const R = useRef(90)
+  const bufArray = useRef<any>([]).current
 
   // *********************************************************
   // movement
@@ -154,9 +155,18 @@ const Rubik = () => {
   const addBox = useCallback(() => {
     const gltfLoader = new GLTFLoader()
 
-    gltfLoader.load('../glb/ooxdots.glb', (gltf) => {
+    gltfLoader.load('src/glb/boxdots.glb', (gltf) => {
       console.log(gltf);
-      Scene.add(gltf.scene)
+      // Scene.add(gltf.scene)
+      gltf.scene.traverse(child => {
+        if(child.type === 'Mesh') {
+          console.log('child',child);
+          
+          const { array } = child?.geometry.attributes.position
+          console.log(array)
+          bufArray.push(array)
+        }
+      })
     })
   }, [])
 
@@ -178,12 +188,14 @@ const Rubik = () => {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
     const gradient = ctx?.createLinearGradient(0, 0, window.innerWidth, 0)
     gradient?.addColorStop(0, '#4e22b7')
     gradient?.addColorStop(1, '#3292ff')
-    ctx.fillStyle = gradient
-    ctx?.fillRect(0, 0, window.innerWidth, window.innerHeight)
+    if(ctx.fillStyle) {
+      ctx.fillStyle = gradient as CanvasGradient
+      ctx?.fillRect(0, 0, window.innerWidth, window.innerHeight)
+    }
     const canvasTexture = new THREE.CanvasTexture(canvas)
 
     Scene.background = canvasTexture
