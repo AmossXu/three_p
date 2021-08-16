@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 const Rubik = () => {
   const threeRef = useRef<any>()
@@ -150,6 +151,15 @@ const Rubik = () => {
 
   }, [])
 
+  const addBox = useCallback(() => {
+    const gltfLoader = new GLTFLoader()
+
+    gltfLoader.load('../glb/ooxdots.glb', (gltf) => {
+      console.log(gltf);
+      Scene.add(gltf.scene)
+    })
+  }, [])
+
   const initThree = useCallback(() => {
     Renderer.setSize(window.innerWidth, window.innerHeight);
     Renderer.shadowMap.enabled = true
@@ -162,6 +172,22 @@ const Rubik = () => {
     Camera.lookAt(0, 0, 0)
     Camera.updateProjectionMatrix()
   }, [Renderer, threeRef])
+
+  const initBackGround = useCallback(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const ctx = canvas.getContext('2d')
+    const gradient = ctx?.createLinearGradient(0, 0, window.innerWidth, 0)
+    gradient?.addColorStop(0, '#4e22b7')
+    gradient?.addColorStop(1, '#3292ff')
+    ctx.fillStyle = gradient
+    ctx?.fillRect(0, 0, window.innerWidth, window.innerHeight)
+    const canvasTexture = new THREE.CanvasTexture(canvas)
+
+    Scene.background = canvasTexture
+  }, [])
 
   // 渲染
   const renderScene = useCallback(() => {
@@ -188,12 +214,14 @@ const Rubik = () => {
   useEffect(() => {
     threeRef.current.append(Renderer.domElement);
     initThree();
+    initBackGround()
     createLight()
-    createFloor()
-    createLambert();
-    createLine();
-    createRect();
-    createPhong();
+    // createFloor()
+    // createLambert();
+    // createLine();
+    // createRect();
+    // createPhong();
+    addBox()
     renderScene();
 
     window.addEventListener('resize', resizeScene, false )
