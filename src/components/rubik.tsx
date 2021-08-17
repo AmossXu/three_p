@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
+import TWEEN from 'three-tween'
 const Rubik = () => {
   const threeRef = useRef<any>()
   const Scene = useRef(new THREE.Scene()).current;
@@ -153,7 +154,16 @@ const Rubik = () => {
   }, [])
 
   const addBox = useCallback(() => {
-    const gltfLoader = new GLTFLoader()
+    const manager = new THREE.LoadingManager()
+    const gltfLoader = new GLTFLoader(manager)
+
+    manager.onStart = () => {
+      console.log('STATR');
+      
+    }
+    manager.onLoad = () => {
+      console.log('111', bufArray)
+    }
 
     gltfLoader.load('src/glb/boxdots.glb', (gltf) => {
       console.log(gltf);
@@ -168,6 +178,29 @@ const Rubik = () => {
         }
       })
     })
+    const geometry = new THREE.BufferGeometry()
+    geometry.tween = []
+    const vertices = []
+    
+    for (let i = 0; i < 26016; i++) {
+      const position = THREE.MathUtils.randFloat(-4, 4)
+      // geometry.tween.push(new TWEEN.Tween({ position }).easing(TWEEN.Eeasing.Exponential.In))
+      vertices.push(position)
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
+
+    const points =new THREE.Points(geometry, new THREE.PointsMaterial({
+      // map: new THREE.TextureLoader().lo
+      alphaTest: 0.1,
+      opacity: 0.5,
+      transparent: true,
+      depthTest: true,
+      size: 0.08,
+    }))
+
+    Scene.add(points)
+    Meshs.push(points)
   }, [])
 
   const initThree = useCallback(() => {
@@ -227,7 +260,7 @@ const Rubik = () => {
     threeRef.current.append(Renderer.domElement);
     initThree();
     initBackGround()
-    createLight()
+    // createLight()
     // createFloor()
     // createLambert();
     // createLine();
