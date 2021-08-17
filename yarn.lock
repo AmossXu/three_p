@@ -537,7 +537,12 @@
   dependencies:
     "has-flag" "^3.0.0"
 
-"three@^0.130.1":
+"three-tween@^1.0.0":
+  "integrity" "sha512-JoRS/llDmrpZq7quzuk/Y9lDDW2ziW9eulMQDMi+Qfy5GcWhnnRYcoNcPFw/VPm4xptehcWDSNNBBdweX6ZIWw=="
+  "resolved" "https://registry.npmjs.org/three-tween/-/three-tween-1.0.0.tgz"
+  "version" "1.0.0"
+
+"three@^0.130.1", "three@>= 0.91":
   "integrity" "sha512-OSPPKcGvFSiGkG3jFrwwC76PBV/ZSrGxpBbg28bW8s9GU8r/y2spNGtEXHEb/CVqo0Ctf5Lx2rVaxQZB6OasaA=="
   "resolved" "https://registry.npmjs.org/three/-/three-0.130.1.tgz"
   "version" "0.130.1"

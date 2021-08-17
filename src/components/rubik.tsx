@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
-
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
+import TWEEN from 'three-tween'
 const Rubik = () => {
   const threeRef = useRef<any>()
   const Scene = useRef(new THREE.Scene()).current;
   const Camera = useRef(new THREE.PerspectiveCamera()).current;
-  const Renderer = useRef(new THREE.WebGLRenderer()).current;
+  const Renderer = useRef(new THREE.WebGLRenderer({ antialias: true })).current;
+  const Controls = useRef(new OrbitControls(Camera, Renderer.domElement))
   const Floor = useRef<any>()
   const Meshs = useRef<any[]>([]).current
   const Lights = useRef<any[]>([]).current
@@ -15,6 +18,7 @@ const Rubik = () => {
   const isDown = useRef<boolean>(false)
   const PI = useRef(15)
   const R = useRef(90)
+  const bufArray = useRef<any>([]).current
 
   // *********************************************************
   // movement
@@ -149,6 +153,56 @@ const Rubik = () => {
 
   }, [])
 
+  const addBox = useCallback(() => {
+    const manager = new THREE.LoadingManager()
+    const gltfLoader = new GLTFLoader(manager)
+
+    manager.onStart = () => {
+      console.log('STATR');
+      
+    }
+    manager.onLoad = () => {
+      console.log('111', bufArray)
+    }
+
+    gltfLoader.load('src/glb/boxdots.glb', (gltf) => {
+      console.log(gltf);
+      // Scene.add(gltf.scene)
+      gltf.scene.traverse(child => {
+        if(child.type === 'Mesh') {
+          console.log('child',child);
+          
+          const { array } = child?.geometry.attributes.position
+          console.log(array)
+          bufArray.push(array)
+        }
+      })
+    })
+    const geometry = new THREE.BufferGeometry()
+    geometry.tween = []
+    const vertices = []
+    
+    for (let i = 0; i < 26016; i++) {
+      const position = THREE.MathUtils.randFloat(-4, 4)
+      // geometry.tween.push(new TWEEN.Tween({ position }).easing(TWEEN.Eeasing.Exponential.In))
+      vertices.push(position)
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
+
+    const points =new THREE.Points(geometry, new THREE.PointsMaterial({
+      // map: new THREE.TextureLoader().lo
+      alphaTest: 0.1,
+      opacity: 0.5,
+      transparent: true,
+      depthTest: true,
+      size: 0.08,
+    }))
+
+    Scene.add(points)
+    Meshs.push(points)
+  }, [])
+
   const initThree = useCallback(() => {
     Renderer.setSize(window.innerWidth, window.innerHeight);
     Renderer.shadowMap.enabled = true
@@ -162,6 +216,24 @@ const Rubik = () => {
     Camera.updateProjectionMatrix()
   }, [Renderer, threeRef])
 
+  const initBackGround = useCallback(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+    const gradient = ctx?.createLinearGradient(0, 0, window.innerWidth, 0)
+    gradient?.addColorStop(0, '#4e22b7')
+    gradient?.addColorStop(1, '#3292ff')
+    if(ctx.fillStyle) {
+      ctx.fillStyle = gradient as CanvasGradient
+      ctx?.fillRect(0, 0, window.innerWidth, window.innerHeight)
+    }
+    const canvasTexture = new THREE.CanvasTexture(canvas)
+
+    Scene.background = canvasTexture
+  }, [])
+
   // 渲染
   const renderScene = useCallback(() => {
     Renderer.render(Scene, Camera);
@@ -172,16 +244,32 @@ const Rubik = () => {
     amimationFrame.current = window.requestAnimationFrame(() => renderScene())
   }, [Renderer, Meshs])
 
+  const resizeScene = useCallback(() => {
+    Renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // 相机参数
+    Camera.aspect = window.innerWidth / window.innerHeight
+    Camera.fov = 45
+    Camera.near = 1
+    Camera.position.set(0 , 10, PI.current)
+    Camera.lookAt(0, 0, 0)
+    Camera.updateProjectionMatrix()
+  }, [])
+
   useEffect(() => {
     threeRef.current.append(Renderer.domElement);
     initThree();
-    createLight()
-    createFloor()
-    createLambert();
-    createLine();
-    createRect();
-    createPhong();
+    initBackGround()
+    // createLight()
+    // createFloor()
+    // createLambert();
+    // createLine();
+    // createRect();
+    // createPhong();
+    addBox()
     renderScene();
+
+    window.addEventListener('resize', resizeScene, false )
 
     return () => {
       cancelAnimationFrame(amimationFrame.current)
@@ -195,12 +283,14 @@ const Rubik = () => {
       })
       Renderer.dispose();
 
+      window.removeEventListener('resize', resizeScene, false)
+
       Floor.current && Scene.remove(Floor.current)
       // Scene.dispose();
     }
   }, [])
-
-  return <div ref={threeRef} onWheel={wheel} onMouseDown={mouseDown} onMouseUp={mouseUp} onMouseMove={move} id="canvas-frame" />;
+  // return <div ref={threeRef} onWheel={wheel} onMouseDown={mouseDown} onMouseUp={mouseUp} onMouseMove={move} id="canvas-frame" />;
+  return <div ref={threeRef} id="canvas-frame" />;
 };
 
 export default Rubik;
