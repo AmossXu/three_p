@@ -1,14 +1,17 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
-import TWEEN from 'three-tween'
+import TWEEN from '../utils/tween.esm.js'
 const Rubik = () => {
   const threeRef = useRef<any>()
+  const [currentBuffer, setCurrentBuffer] = useState(0)
   const Scene = useRef(new THREE.Scene()).current;
   const Camera = useRef(new THREE.PerspectiveCamera()).current;
   const Renderer = useRef(new THREE.WebGLRenderer({ antialias: true })).current;
   const Controls = useRef(new OrbitControls(Camera, Renderer.domElement))
+
+  let PointGeometry = useRef<any>().current
   const Floor = useRef<any>()
   const Meshs = useRef<any[]>([]).current
   const Lights = useRef<any[]>([]).current
@@ -153,16 +156,37 @@ const Rubik = () => {
 
   }, [])
 
+  const transition = useCallback(() => {
+    console.log('11', PointGeometry)
+    
+    for (let i = 0, j =0; i < 26016; i++,j++) {
+      const item = Meshs[0].geometry.tween[i]
+      if(j >= bufArray[currentBuffer].length) {
+        j = 0
+      }
+
+      item.to({position: bufArray[currentBuffer][j]}, THREE.MathUtils.randFloat(1000, 4000)).onUpdate((item: any) => {
+        PointGeometry.attributes.position.array[i] = item.position
+        PointGeometry.attributes.position.needsUpdate = true
+      }).start()
+    }
+
+    setTimeout(() => {
+      setCurrentBuffer(currentBuffer+1)
+      transition()
+    }, 6000)
+  }, [PointGeometry])
+
   const addBox = useCallback(() => {
     const manager = new THREE.LoadingManager()
     const gltfLoader = new GLTFLoader(manager)
+    PointGeometry = new THREE.BufferGeometry()
 
     manager.onStart = () => {
       console.log('STATR');
-      
     }
     manager.onLoad = () => {
-      console.log('111', bufArray)
+      transition()
     }
 
     gltfLoader.load('src/glb/boxdots.glb', (gltf) => {
@@ -171,26 +195,28 @@ const Rubik = () => {
       gltf.scene.traverse(child => {
         if(child.type === 'Mesh') {
           console.log('child',child);
-          
           const { array } = child?.geometry.attributes.position
-          console.log(array)
+          bufArray.push(array)
+          bufArray.push(array)
           bufArray.push(array)
         }
       })
     })
-    const geometry = new THREE.BufferGeometry()
-    geometry.tween = []
+    PointGeometry.tween = []
     const vertices = []
     
+    /** 循环长度最长的 */
     for (let i = 0; i < 26016; i++) {
       const position = THREE.MathUtils.randFloat(-4, 4)
-      // geometry.tween.push(new TWEEN.Tween({ position }).easing(TWEEN.Eeasing.Exponential.In))
+      /** 同时插入动画easing */
+
+      PointGeometry.tween.push(new TWEEN.Tween({ position }).easing(TWEEN.Easing.Exponential.In))
       vertices.push(position)
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
+    PointGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
 
-    const points =new THREE.Points(geometry, new THREE.PointsMaterial({
+    const points =new THREE.Points(PointGeometry, new THREE.PointsMaterial({
       // map: new THREE.TextureLoader().lo
       alphaTest: 0.1,
       opacity: 0.5,
@@ -241,8 +267,10 @@ const Rubik = () => {
       item.rotation.x += 0.01
       item.rotation.y += 0.01
     })
+    TWEEN.update()
+
     amimationFrame.current = window.requestAnimationFrame(() => renderScene())
-  }, [Renderer, Meshs])
+  }, [Renderer, Meshs, TWEEN])
 
   const resizeScene = useCallback(() => {
     Renderer.setSize(window.innerWidth, window.innerHeight);
