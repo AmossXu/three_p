@@ -10,6 +10,8 @@ const Rubik = () => {
   const Camera = useRef(new THREE.PerspectiveCamera()).current;
   const Renderer = useRef(new THREE.WebGLRenderer({ antialias: true })).current;
   const Controls = useRef(new OrbitControls(Camera, Renderer.domElement))
+
+  let PointGeometry = useRef<any>().current
   const Floor = useRef<any>()
   const Meshs = useRef<any[]>([]).current
   const Lights = useRef<any[]>([]).current
@@ -154,8 +156,8 @@ const Rubik = () => {
 
   }, [])
 
-  const transition = useCallback((geometry) => {
-    console.log(Meshs);
+  const transition = useCallback(() => {
+    console.log('11', PointGeometry)
     
     for (let i = 0, j =0; i < 26016; i++,j++) {
       const item = Meshs[0].geometry.tween[i]
@@ -163,26 +165,28 @@ const Rubik = () => {
         j = 0
       }
 
-      item.to({position: bufArray[currentBuffer][j]}, THREE.MathUtils.randFloat(1000, 4000)).onUpdate((item) => {
-        geometry.attributes.position.array[i] = item.position
-        geometry.attributes.position.needsUpdate = true
+      item.to({position: bufArray[currentBuffer][j]}, THREE.MathUtils.randFloat(1000, 4000)).onUpdate((item: any) => {
+        PointGeometry.attributes.position.array[i] = item.position
+        PointGeometry.attributes.position.needsUpdate = true
       }).start()
-
     }
-  }, [])
+
+    setTimeout(() => {
+      setCurrentBuffer(currentBuffer+1)
+      transition()
+    }, 6000)
+  }, [PointGeometry])
 
   const addBox = useCallback(() => {
     const manager = new THREE.LoadingManager()
     const gltfLoader = new GLTFLoader(manager)
-    const geometry = new THREE.BufferGeometry()
+    PointGeometry = new THREE.BufferGeometry()
 
     manager.onStart = () => {
       console.log('STATR');
-      
     }
     manager.onLoad = () => {
-      console.log('111', bufArray)
-      transition(geometry)
+      transition()
     }
 
     gltfLoader.load('src/glb/boxdots.glb', (gltf) => {
@@ -198,7 +202,7 @@ const Rubik = () => {
         }
       })
     })
-    geometry.tween = []
+    PointGeometry.tween = []
     const vertices = []
     
     /** 循环长度最长的 */
@@ -206,13 +210,13 @@ const Rubik = () => {
       const position = THREE.MathUtils.randFloat(-4, 4)
       /** 同时插入动画easing */
 
-      geometry.tween.push(new TWEEN.Tween({ position }).easing(TWEEN.Easing.Exponential.In))
+      PointGeometry.tween.push(new TWEEN.Tween({ position }).easing(TWEEN.Easing.Exponential.In))
       vertices.push(position)
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
+    PointGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
 
-    const points =new THREE.Points(geometry, new THREE.PointsMaterial({
+    const points =new THREE.Points(PointGeometry, new THREE.PointsMaterial({
       // map: new THREE.TextureLoader().lo
       alphaTest: 0.1,
       opacity: 0.5,
